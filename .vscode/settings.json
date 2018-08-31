@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.csv": "csv",
+        "stdio.h": "c"
+    }
+}
