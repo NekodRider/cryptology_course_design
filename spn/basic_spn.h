@@ -16,6 +16,21 @@ unsigned int sub(unsigned int a)
     return res;
 }
 
+unsigned int sub_inverse(unsigned int a)
+{
+    int i = 0;
+    unsigned int tmp, res = 0,
+                      mask = 0xf,
+                      s_inverse_index[16] = {14, 3, 4, 8, 1, 12, 10, 15, 7, 13, 9, 6, 11, 2, 0, 5};
+    for (i = 0; i < 4; i++)
+    {
+        tmp = a & mask;
+        res = res | (s_inverse_index[tmp] << (i * 4));
+        a = a >> 4;
+    }
+    return res;
+}
+
 unsigned int per(unsigned int b)
 {
     int i = 0;
@@ -68,4 +83,21 @@ unsigned int spn(unsigned int x, unsigned int *k)
     v = sub(u);
     y = v ^ k[NR + 1];
     return y;
+}
+
+unsigned int spn_inverse(unsigned int y, unsigned int *k)
+{
+    int r;
+    unsigned int u, v, w, x = 0; //w0 = x
+    v = y ^ k[NR + 1];
+    u = sub_inverse(v);
+    w = u ^ k[NR];
+    for (r = NR-1; r > 0; r--)
+    {
+        v = per(w);
+        u = sub_inverse(v);
+        w = u ^ k[r];
+    }
+    x = w;
+    return x;
 }

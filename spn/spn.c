@@ -14,5 +14,5 @@ int main()
                  *ptk = k_group;
     keygen(ptk, k);
     res = spn(x, ptk);
-    printf("%x", res);
+    printf("%x %x", res, spn_inverse(res,ptk));
 }
