@@ -3,6 +3,8 @@
         "*.csv": "csv",
         "stdio.h": "c",
         "basic_spn.h": "c",
-        "spn_analyse.h": "c"
+        "spn_analyse.h": "c",
+        "gmp.h": "c",
+        "iosfwd": "c"
     }
 }

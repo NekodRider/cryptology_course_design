@@ -101,3 +101,14 @@ unsigned int spn_inverse(unsigned int y, unsigned int *k)
     x = w;
     return x;
 }
+
+char* uint2char(char* c,unsigned int a){
+    int i=15;
+    while(i>=0){
+        c[i]='0';
+        if((a>>(15-i))&1)
+            c[i]='1';
+        i--;
+    }
+    c[i]='\0';
+}
