@@ -1,242 +1,62 @@
 #include <stdio.h>
+#include "basic_spn.h"
+#include "spn_analyse.h"
 
-unsigned int sub_inverse(unsigned int a)
+int main()
 {
-    int i = 0;
-    unsigned int tmp, res = 0,
-                      mask = 0xf,
-                      s_inverse_index[16] = {14, 3, 4, 8, 1, 12, 10, 15, 7, 13, 9, 6, 11, 2, 0, 5};
-    for (i = 0; i < 4; i++)
+    //k:0011 1010 1001 0100 1101 0110 0011 1111
+    //x:0010 0110 1011 0111
+    int i;
+    unsigned int k = 0x3A94D63F,
+                 x = 0x26B7,
+                 res = 0,
+                 k_group[NR + 2],
+                 *ptk = k_group,
+                 T1[8000 * 2],
+                 T2_1[110 * 4],
+                 T2_2[1600 * 4],
+                 k_try = 0,
+                 k_try_group[NR + 2],
+                 *ptk_try = k_try_group;
+    keygen(ptk, k);
+    for (i = 0; i < 8000; i++)
     {
-        tmp = a & mask;
-        res = res | (s_inverse_index[tmp] << (i * 4));
-        a = a >> 4;
+        T1[2 * i] = i;
+        T1[2 * i + 1] = spn(i, ptk);
     }
-    return res;
-}
-
-unsigned int linear_attack(unsigned int *T, int t)
-{
-    unsigned int k2,maxkey=0;
-    int i, j, l1, l2 = 0,
-                  count[17][17],
-                  max = -1;
-    for (l1 = 0; l1 < 17; l1++)
-        for (l2 = 0; l2 < 17; l2++)
-            count[l1][l2] = 0;
-
-    for (i = 0; i < t; i++)
+    //xor requirement:
+    //0000 1011 0000 0000
+    //0000 0000 0010 0000
+    for (i = 0; i < 110; i++)
     {
-        unsigned int x = T[2 * i],
-                     y = T[2 * i + 1];
-        int x5 = (x >> 11) & 0x1,
-            x7 = (x >> 9) & 0x1,
-            x8 = (x >> 8) & 0x1,
-            y2 = (y >> 8) & 0xf,
-            y4 = y & 0xf;
-        for (l1 = 0; l1 < 17; l1++)
-            for (l2 = 0; l2 < 17; l2++)
-            {
-                unsigned int z, v4_2, v4_4, u4_2, u4_4, u4__6, u4__8, u4__14, u4__16;
-                v4_2 = l1 ^ y2;
-                v4_4 = l2 ^ y4;
-                u4_2 = sub_inverse(v4_2);
-                u4_4 = sub_inverse(v4_4);
-                u4__6 = (u4_2 >> 2) & 0x1;
-                u4__8 = u4_2 & 0x1;
-                u4__14 = (u4_4 >> 2) & 0x1;
-                u4__16 = u4_4 & 0x1;
-                z = x5 ^ x7 ^ x8 ^ u4__6 ^ u4__8 ^ u4__14 ^ u4__16;
-                if (z = 0)
-                    count[l1][l2]++;
-            }
+        T2_1[4 * i] = i;
+        T2_1[4 * i + 1] = i ^ 0x0b00;
+        T2_1[4 * i + 2] = spn(i, ptk);
+        T2_1[4 * i + 3] = spn(T2_1[4 * i + 1], ptk);
     }
-
-    for (l1 = 0; l1 < 17; l1++)
-        for (l2 = 0; l2 < 17; l2++)
-        {
-            count[l1][l2] = count[l1][l2] - t / 2;
-            if (count[l1][l2] < 0)
-                count[l1][l2] = -count[l1][l2];
-            if (count[l1][l2] > max)
-            {
-                max = count[l1][l2];
-                maxkey | = (l1 << 8) | l2;
-                k2 = l1;
-            }
-        }
-    
-    max = -1;
-    
-    for (l1 = 0; l1 < 17; l1++)
-        for (l2 = 0; l2 < 17; l2++)
-            count[l1][l2] = 0;
-
-    for (i = 0; i < t; i++)
+    for (i = 0; i < 1600; i++)
     {
-        unsigned int x = T[2 * i],
-                     y = T[2 * i + 1];
-        int x9 = (x >> 7) & 0x1,
-            x10 = (x >> 6) & 0x1,
-            y1 = (y>>12)&0*f,
-            y2 = (y >> 8) & 0xf,
-            y3 = (y>>4) & 0xf;
-        for (l1 = 0; l1 < 17; l1++)
-            for (l2 = 0; l2 < 17; l2++)
-            {
-                unsigned int z, v4_1, v4_2,v4_3,u4_1, u4_2, u4_3, u4__1, u4__2, u4__5, u4__6,u4__11;
-                v4_1 = l1 ^ y1;
-                v4_2 = k2 ^ y2;
-                v4_3 = l2 ^ y3;
-                u4_1 = sub_inverse(v4_1);
-                u4_2 = sub_inverse(v4_2);
-                u4_3 = sub_inverse(v4_3);
-
-                u4__1 = (u4_1 >> 3) & 0x1;
-                u4__2 = (u4_1 >> 2) & 0x1;
-                u4__5 = (u4_2 >> 3) & 0x1;
-                u4__6 = (u4_2 >>2) & 0x1;
-                u4__11 = (u4_3>>3)&0x1;
-                z = x9 ^ x10 ^ u4__1 ^ u4__2 ^ u4__5 ^ u4__6 ^ u4__11;
-                if (z = 0)
-                    count[l1][l2]++;
-            }
+        T2_2[4 * i] = i;
+        T2_2[4 * i + 1] = i ^ 0x0020;
+        T2_2[4 * i + 2] = spn(i, ptk);
+        T2_2[4 * i + 3] = spn(T2_2[4 * i + 1], ptk);
     }
-
-    for (l1 = 0; l1 < 17; l1++)
-        for (l2 = 0; l2 < 17; l2++)
-        {
-            count[l1][l2] = count[l1][l2] - t / 2;
-            if (count[l1][l2] < 0)
-                count[l1][l2] = -count[l1][l2];
-            if (count[l1][l2] > max)
-            {
-                max = count[l1][l2];
-                maxkey| = (l1 << 12) | (l2<<4);
-            }
-        }
-    return maxkey;
-}
-
-unsigned int diff_attack(unsigned int *T, int t)
-{
-    unsigned int k2,maxkey=0;
-    int i, j, l1, l2 = 0,
-                  count[17][17],
-                  max = -1;
-    for (l1 = 0; l1 < 17; l1++)
-        for (l2 = 0; l2 < 17; l2++)
-            count[l1][l2] = 0;
-
-    for (i = 0; i < t; i++)
+    res = linear_attack(T1, 8000);
+    printf("linear_attack: %x\n", res);
+    res = diff_attack(T2_1, T2_2, 110, 1600);
+    printf("diff_attack: %x\n", res);
+    do
     {
-        unsigned int x = T[4 * i],
-                     x_ = T[4 * i + 1],
-                     y = T[4 * i + 2],
-                     y_ = T[4 * i + 3];
-        int y1 = (y >> 12) & 0xf,
-            y2 = (y >> 8) & 0xf,
-            y3 = (y >> 4) & 0xf,
-            y4 = y & 0xf,
-            y1_ = (y_ >> 12) & 0xf,
-            y2_ = (y_ >> 8) & 0xf,
-            y3_ = (y_ >> 4) & 0xf,
-            y4_ = y_ & 0xf;
-        if (y1 == y1_ && y3 == y3_)
-        {
-            for (l1 = 0; l1 < 17; l1++)
-                for (l2 = 0; l2 < 17; l2++)
-                {
-                    unsigned int v4_2, v4_4, u4_2, u4_4, v4_2_,v4_4_,u4_2_,u4_4_,u4_2__,u4_4__;
-                    v4_2 = l1 ^ y2;
-                    v4_4 = l2 ^ y4;
-                    u4_2 = sub_inverse(v4_2);
-                    u4_4 = sub_inverse(v4_4);
-
-                    v4_2_ = l1 ^ y2_;
-                    v4_4_ = l2 ^ y4_;
-                    u4_2_ = sub_inverse(v4_2_);
-                    u4_4_ = sub_inverse(v4_4_);
-
-                    u4_2__ = u4_2 ^ u4_2_;
-                    u4_4__ = u4_4 ^ u4_4_;
-
-                    if  (u4_2__==6&&u4_4__ ==6) 
-                        count[l1][l2]++;
-                }
-        }
-    }
-
-    for (l1 = 0; l1 < 17; l1++)
-        for (l2 = 0; l2 < 17; l2++)
-        {
-            if (count[l1][l2] > max)
-            {
-                max = count[l1][l2];
-                maxkey| = (l1 << 8) | l2;
-                k2 = l1;
-            }
-        }
-
-    max = -1;
-    
-    for (l1 = 0; l1 < 17; l1++)
-        for (l2 = 0; l2 < 17; l2++)
-            count[l1][l2] = 0;
-
-    for (i = 0; i < t; i++)
-    {
-        unsigned int x = T[4 * i],
-                     x_ = T[4 * i + 1],
-                     y = T[4 * i + 2],
-                     y_ = T[4 * i + 3];
-        int y1 = (y >> 12) & 0xf,
-            y2 = (y >> 8) & 0xf,
-            y3 = (y >> 4) & 0xf,
-            y4 = y & 0xf,
-            y1_ = (y_ >> 12) & 0xf,
-            y2_ = (y_ >> 8) & 0xf,
-            y3_ = (y_ >> 4) & 0xf,
-            y4_ = y_ & 0xf;
-        if (y4 == y4_)
-        {
-            for (l1 = 0; l1 < 17; l1++)
-                for (l2 = 0; l2 < 17; l2++)
-                {
-                    unsigned int v4_1,v4_2, v4_3,u4_1, u4_2, u4_3,v4_1_, v4_2_,v4_3_,u4_1_,u4_2_,u4_3_,u4_1__,u4_2__,u4_3__;
-                    v4_1 = l1 ^ y1;
-                    v4_2 = k2 ^ y2;
-                    v4_3 = l2 ^ y3;
-                    u4_1 = sub_inverse(v4_1);
-                    u4_2 = sub_inverse(v4_2);
-                    u4_3 = sub_inverse(v4_3);
-
-                    v4_1_ = l1 ^ y1_;
-                    v4_2_ = k2 ^ y2_;
-                    v4_3_ = l2 ^ y3_;
-                    u4_1_ = sub_inverse(v4_1_);
-                    u4_2_ = sub_inverse(v4_2_);
-                    u4_3_ = sub_inverse(v4_3_);
-
-                    u4_1__ = u4_1 ^ u4_1_;
-                    u4_2__ = u4_2 ^ u4_2_;
-                    u4_3__ = u4_3 ^ u4_3_;
-
-                    if  (u4_1__==0xe&&u4_2__==0xe&&u4_4__ ==0xe) 
-                        count[l1][l2]++;
-                }
-        }
-    }
-
-    for (l1 = 0; l1 < 17; l1++)
-        for (l2 = 0; l2 < 17; l2++)
-        {
-            if (count[l1][l2] > max)
-            {
-                max = count[l1][l2];
-                maxkey| = (l1 << 12) | (l2<<4);
-            }
-        }
-
-    return maxkey;
+        keygen(ptk_try, k_try << 16 | res);
+        if (spn(T1[0], ptk_try) == T1[1])
+            if (spn(T1[2], ptk_try) == T1[3])
+                if (spn(T1[4], ptk_try) == T1[5])
+                    if (spn(T1[6], ptk_try) == T1[7])
+                        if (spn(T1[8], ptk_try) == T1[9])
+                        {
+                            printf("real K is %x%x", k_try, res);
+                            break;
+                        }
+        k_try++;
+    } while (k_try < 0x10000);
 }

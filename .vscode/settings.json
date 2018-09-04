@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "*.csv": "csv",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "basic_spn.h": "c",
+        "spn_analyse.h": "c"
     }
 }
