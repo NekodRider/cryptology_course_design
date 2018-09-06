@@ -5,6 +5,7 @@
         "basic_spn.h": "c",
         "spn_analyse.h": "c",
         "gmp.h": "c",
-        "iosfwd": "c"
+        "iosfwd": "c",
+        "windows.h": "c"
     }
 }
