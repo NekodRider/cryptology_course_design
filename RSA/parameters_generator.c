@@ -63,7 +63,7 @@ void get_random_prime(mpz_t res,gmp_randstate_t s){
     mpz_mod(tmp,res,2);
     if (mpq_equal(tmp,1))
         mpz_add_ui(res, res, 1);
-    while (!miller_rabin(res))
+    while (!miller_rabin(res, 25))
         mpz_add_ui(res, res, 2);
     mpz_clear(tmp);
 }
