@@ -1,20 +1,5 @@
 #include <stdio.h>
 
-unsigned int sub_inverse(unsigned int a)
-{
-    int i = 0;
-    unsigned int tmp, res = 0,
-                      mask = 0xf,
-                      s_inverse_index[16] = {14, 3, 4, 8, 1, 12, 10, 15, 7, 13, 9, 6, 11, 2, 0, 5};
-    for (i = 0; i < 4; i++)
-    {
-        tmp = a & mask;
-        res = res | (s_inverse_index[tmp] << (i * 4));
-        a = a >> 4;
-    }
-    return res;
-}
-
 unsigned int linear_attack(unsigned int *T, int t)
 {
     unsigned int k2, maxkey = 0;
