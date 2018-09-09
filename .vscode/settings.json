@@ -6,6 +6,9 @@
         "spn_analyse.h": "c",
         "gmp.h": "c",
         "iosfwd": "c",
-        "windows.h": "c"
+        "windows.h": "c",
+        "des.h": "c",
+        "rsa.h": "c",
+        "comp.h": "c"
     }
 }
