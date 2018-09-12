@@ -2,111 +2,119 @@
 #include <string.h>
 #include <stdlib.h>
 #include <winsock2.h>
-#include<ws2tcpip.h>
+#include <ws2tcpip.h>
 #include <openssl/md5.h>
 #include <openssl/des.h>
 #include <openssl/ec.h>
-#include <openssl/comp.h>
+#include <openssl/evp.h>
+#include <openssl/pem.h>
 int main()
 {
     MD5_CTX md5_ctx, *p_md5_ctx = &md5_ctx;
     DES_cblock key;
     DES_key_schedule key_schedule;
-    unsigned char md5_res[16], key_str[10] = "hustyyw",ep_des[120],comp_res[114],m_buf[144];
+    DES_cblock ivec;
+    unsigned char md5_res[16],ep_des[128],*signature,share_key[20];
     char buf[128],path_in[100],path_out[100];
-    int length, i, nid, ec_crv_len, total_len=0;
-    FILE *fp_in,*fp_out;
+    unsigned int length, i, nid, ec_crv_len, sig_len=0;
+    BIO *fp_in, *fp_out, *fp_alice_pub, *fp_bob_pub;
     EC_KEY *ec_key;
     EC_builtin_curve *ec_curves;
     EC_GROUP *ec_group;
-
-    
-    
-    memset(m_buf, 0, sizeof(m_buf));
+    //ENGINE *engine = ENGINE_get_cipher_engine();
     memset(buf, 0, sizeof(buf));
     memset(md5_res, 0, sizeof(md5_res));
-    memset(comp_res, 0, sizeof(comp_res));
     memset(ep_des, 0, sizeof(ep_des));
-    DES_string_to_key(key_str, &key);
-    DES_set_key_unchecked(&key, &key_schedule);
-    printf("pls input raw filename:");
+
+    printf("please input raw filename:");
     scanf("%s",path_in);
-    if((fp_in = fopen(path_in, "rb"))==NULL){
+    if((fp_in = BIO_new_file(path_in,"rb"))==NULL){
         printf("cant open file!\n");
         return -1;
     }
-    printf("pls input PGP filename:");
+    printf("please input PGP filename:");
     scanf("%s",path_out);
-    //fp_out = fopen(path_out,"wb");
-    while ((length = fread(buf, 1, 128, fp_in)) > 0)
-    {
-        MD5_Init(p_md5_ctx);
-        MD5_Update(p_md5_ctx, buf, length);
-        MD5_Final(md5_res, p_md5_ctx);
-        // for (i = 0; i < 16; i++)
-        //     printf("%02x ", md5_res[i]);
-        // printf("\n");
-        for(i=0;i<16;i++)
-            m_buf[i]=md5_res[i];
-        for(i=16;i<144;i++)
-            m_buf[i]=buf[i-16];
-        // for (i = 0; i < 144; i++)
-        //     printf("%02x ",m_buf[i]);
-        COMP_CTX *p_comp_ctx = COMP_CTX_new(COMP_rle());
-        COMP_compress_block(p_comp_ctx,comp_res,114,m_buf,144);
-        COMP_CTX_free(p_comp_ctx);
-        for (i = 0; i < 114; i++)
-            printf("%02x ", comp_res[i]);
-        DES_cblock ivec;
-        memset((char *)&ivec, 0, sizeof(ivec));
-        DES_ncbc_encrypt(comp_res, ep_des, 120, &key_schedule, &ivec, DES_ENCRYPT);
+    fp_out = BIO_new_file(path_out,"wb");
+    fp_alice_pub = BIO_new_file("alice_pub.pem","wb");
+    
 
-        for (i = 0; i < 120; i++)
-            printf("%02x", ep_des[i]);
-        printf("\n");
-        memset(m_buf, 0, sizeof(m_buf));
+    ec_key=EC_KEY_new();
+    /* 获取实现的椭圆曲线个数 */
+    ec_crv_len = EC_get_builtin_curves(NULL, 0);
+    ec_curves = (EC_builtin_curve *)malloc(sizeof(EC_builtin_curve) * ec_crv_len);
+    /* 获取椭圆曲线列表 */
+    EC_get_builtin_curves(ec_curves, ec_crv_len);
+    /* 选取一种椭圆曲线 */
+    nid=ec_curves[25].nid;
+    /* 根据选择的椭圆曲线生成密钥参数 group */
+    ec_group=EC_GROUP_new_by_curve_name(nid);
+    EC_KEY_set_group(ec_key,ec_group);
+    EC_KEY_generate_key(ec_key);
+    /* Alice 公钥 */
+    unsigned int size = ECDSA_size(ec_key);
+    PEM_write_bio_EC_PUBKEY(fp_alice_pub,ec_key);
+    BIO_flush(fp_alice_pub);
+    printf("public key generated!\n");
+    getchar();getchar();
+    /* 获取对方公钥 */
+    fp_bob_pub = BIO_new_file("bob_pub.pem", "rb");
+    const EC_POINT *bob_pub_point;
+    EC_KEY *bob_pub_key = EC_KEY_new();
+    
+    PEM_read_bio_EC_PUBKEY(fp_bob_pub, &bob_pub_key, NULL, NULL);
+    bob_pub_point = EC_KEY_get0_public_key(bob_pub_key);
+   
+    /* 获取共享密钥 */
+    ECDH_compute_key(share_key, 20, bob_pub_point, ec_key, NULL);
+    printf("shared key:");
+    for(i=0;i<20;i++)
+        printf("%02x ",share_key[i]);
+    getchar();getchar();
+    DES_string_to_key(share_key, &key);
+    DES_set_key_unchecked(&key, &key_schedule);
+
+    MD5_Init(p_md5_ctx);
+
+    while ((length = BIO_read(fp_in,buf,128)) > 0)
+    {
+        MD5_Update(p_md5_ctx, buf, length);
+        memset((char *)&ivec, 0, sizeof(ivec));
+        DES_ncbc_encrypt(buf, ep_des, 128, &key_schedule, &ivec, DES_ENCRYPT);
+        BIO_write(fp_out,ep_des,128);
+        // for (i = 0; i < 120; i++)
+        //     printf("%02x", ep_des[i]);
         memset(buf, 0, sizeof(buf));
-        memset(md5_res, 0, sizeof(md5_res));
-        memset(comp_res, 0, sizeof(comp_res));
         memset(ep_des, 0, sizeof(ep_des));
     }
+    MD5_Final(md5_res, p_md5_ctx);
+    
+    signature= (unsigned char*)malloc(size);
+    /* 签名数据，本例未做摘要，可将 digest 中的数据看作是 sha1 摘要结果 */
+    if(ECDSA_sign(0,md5_res,20,signature,&sig_len,ec_key)!=1)
+    {
+        printf("sign err!\n");
+        return -1;
+    }
+    printf("signature:");
+    for(i=0;i<20;i++)
+        printf("%02x ",signature[i]);
+    getchar();getchar();
+    memset((char *)&ivec, 0, sizeof(ivec));
+    DES_ncbc_encrypt(signature, ep_des, size, &key_schedule, &ivec, DES_ENCRYPT);
+    BIO_write(fp_out,ep_des,size);
+
+    //EVP_PKEY* pkey = EVP_PKEY_new();
+    //EVP_PKEY_set1_EC_KEY(pkey,ec_key);
+    //EVP_PKEY_CTX *evp_ctx = EVP_PKEY_CTX_new(pkey,NULL);
+    //EVP_PKEY_CTX_set_ec_paramgen_curve_nid(evp_ctx,nid);
+    //EVP_PKEY_encrypt_init(evp_ctx);
+    //memset(buf,0,sizeof(buf));
+    //EVP_PKEY_encrypt(evp_ctx,buf,128,key_str,128);
+    //BIO_write(fp_out,buf,size);
+
     
     
-
-    // if((ec_key=EC_KEY_new())==NULL)
-    // {
-    //     printf("EC_KEY_new error!\n");
-    //     return -1;
-    // }
-    // /* 获取实现的椭圆曲线个数 */
-    // ec_crv_len = EC_get_builtin_curves(NULL, 0);
-    // ec_curves = (EC_builtin_curve *)malloc(sizeof(EC_builtin_curve) * ec_crv_len);
-    // /* 获取椭圆曲线列表 */
-    // EC_get_builtin_curves(ec_curves, ec_crv_len);
-    // /* 选取一种椭圆曲线 */
-    // nid=ec_curves[25].nid;
-    // /* 根据选择的椭圆曲线生成密钥参数 group */
-    // if((ec_group=EC_GROUP_new_by_curve_name(nid))==NULL)
-    // {
-    //     printf("EC_GROUP_new_by_curve_name error!\n");
-    //     return -1;
-    // }
-    // EC_KEY_set_group(ec_key,ec_group);
-    // EC_KEY_generate_key(ec_key);
-    // if(EC_KEY_check_key(ec_key)!=1)
-    // {
-    //     printf("check key error.\n");
-    //     return -1;
-    // }
-
-
-    // for (i = 0; i < 16; i++)
-    //     printf("%02x", md5_res[i]);
-    
-
-    // memset((char*)&ivec, 0, sizeof(ivec));
-    // DES_ncbc_encrypt(ep_des, dp_des, len, &key_schedule, &ivec, 0);
-    fclose(fp_in);
-    fclose(fp_out);
+    printf("PGP completed!");
+    getchar();
     return 0;
 }
