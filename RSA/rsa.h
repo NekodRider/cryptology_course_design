@@ -196,31 +196,75 @@ void rsa_decrypt_crt(mpz_t x,mpz_t y,mpz_t a,mpz_t p,mpz_t q){
     mpz_mod(x,x,tmp);
 }
 
-void montgomery_mul_mod(mpz_t n,mpz_t a,mpz_t b,mpz_t N){
-    mpz_t b_tmp,r,s;
-    mpz_inits(b_tmp,r,s,NULL);
-    mpz_set(s,a);
-    mpz_set_ui(n,1);
+void mont_mul(mpz_t n,mpz_t a,mpz_t b,mpz_t N){
+    mpz_t N_tmp,a_tmp,tmp,r_tmp,r,t;
+    mpz_inits(N_tmp,a_tmp,tmp,r,r_tmp,t,NULL);
+    mpz_set(a_tmp,a);
+    mpz_set(N_tmp,N);
+    //mpz_mul(n,a,b);
+    while(1){
+        if(mpz_cmp_ui(N_tmp,0)==0)
+            break;
+        mpz_fdiv_r_2exp(r,a_tmp,1);
+        mpz_mul(tmp,r,b);
+        mpz_fdiv_r_2exp(t,n,1);
+        mpz_add(t,tmp,t);
+        mpz_fdiv_r_2exp(t,t,1);
+        mpz_add(n,n,tmp);
+        if(mpz_cmp_ui(t,1)==0){
+            mpz_add(n,n,N);
+        }
+        mpz_fdiv_q_2exp(n,n,1);
+        mpz_fdiv_q_2exp(a_tmp,a_tmp,1);
+        mpz_fdiv_q_2exp(N_tmp, N_tmp, 1);
+    }
+    mpz_mod(n,n,N);
+}
+
+void montgomery_mod_exp(mpz_t n,mpz_t a,mpz_t b,mpz_t N){
+    mpz_t b_tmp,r,s,tmp,tmp_1,k,N_tmp;
+    mpz_inits(b_tmp,r,s,tmp,tmp_1,k,N_tmp,NULL);
+    mpz_set_ui(tmp_1,1);
+    mpz_set_ui(k,1);
+
+    mpz_set(N_tmp,N);
+    while(1){
+        if(mpz_cmp_ui(N_tmp,0)==0)
+            break;
+        mpz_mul_2exp(k,k,2);
+        mpz_mod(k,k,N);
+        mpz_fdiv_q_2exp(N_tmp, N_tmp, 1);
+    }
+
+    mont_mul(s,k,a,N);
+    mont_mul(n,k,tmp_1,N);
+    
     mpz_set(b_tmp,b);
-    mpz_fdiv_r_ui(r, b_tmp, 2);
     while(1){
         if(mpz_cmp_ui(b_tmp,0)==0)
             break;
+        mpz_fdiv_r_2exp(r, b_tmp, 1);
         if(mpz_cmp_ui(r,1)==0){
-            mpz_mul(n,n,s);
-            mpz_mod(n,n,N);
+            mpz_set_ui(tmp,0);
+            mont_mul(tmp,n,s,N);
+            mpz_set(n,tmp);
         }
-        mpz_mul(s,s,s);
-        mpz_mod(s,s,N);
-        mpz_fdiv_q_ui(b_tmp, b_tmp, 2);
-        mpz_fdiv_r_ui(r, b_tmp, 2);
+        mpz_set_ui(tmp,0);
+        mont_mul(tmp,s,s,N);
+        mpz_set(s,tmp);
+        mpz_fdiv_q_2exp(b_tmp, b_tmp, 1);
     }
+    mpz_set_ui(tmp,0);
+    mont_mul(tmp,tmp_1,n,N);
+    mpz_mod(tmp,tmp,N);
+    mpz_set(n,tmp);
+    
 }
 
 void rsa_encrypt_montgomery(mpz_t y,mpz_t n,mpz_t b,mpz_t x){
-    montgomery_mul_mod(y,x,b,n);
+    montgomery_mod_exp(y,x,b,n);
 }
 
 void rsa_decrypt_montgomery(mpz_t x,mpz_t n,mpz_t a,mpz_t y){
-    montgomery_mul_mod(x,y,a,n);
+    montgomery_mod_exp(x,y,a,n);
 }
