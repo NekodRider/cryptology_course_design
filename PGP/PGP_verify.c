@@ -14,7 +14,7 @@ int main()
     DES_key_schedule key_schedule;
     unsigned char md5_res[16], ep_des[128], dp_des[128], *signature, share_key[20];
     char buf[128], path_in[100], path_out[100];
-    unsigned int length, i, nid, ec_crv_len, sig_len = 0;
+    unsigned int length, i, nid, ec_crv_len;
     BIO *fp_in, *fp_out, *fp_alice_pub, *fp_bob_pub;
     EC_KEY *ec_key;
     EC_builtin_curve *ec_curves;
@@ -54,7 +54,7 @@ int main()
     PEM_write_bio_EC_PUBKEY(fp_bob_pub, ec_key);
     BIO_flush(fp_bob_pub);
     printf("public key generated!\n");
-    getchar();
+    getchar();getchar();
     /* 获取对方公钥 */
     fp_alice_pub = BIO_new_file("alice_pub.pem", "rb");
     const EC_POINT *alice_pub_point;
@@ -77,32 +77,38 @@ int main()
     {
         memset((char *)&ivec, 0, sizeof(ivec));
         DES_ncbc_encrypt(buf, dp_des, 128, &key_schedule, &ivec, 0);
-        BIO_write(fp_out, dp_des, 128);
+        //BIO_write(fp_out, dp_des, 128);
+        BIO_printf(fp_out,"%s",dp_des);
         printf("%s",dp_des);
-        MD5_Update(p_md5_ctx, buf, length);
+        MD5_Update(p_md5_ctx, dp_des, 128);
         // for (i = 0; i < 120; i++)
         //     printf("%02x", ep_des[i]);
         memset(buf, 0, sizeof(buf));
         memset(ep_des, 0, sizeof(ep_des));
     }
+    BIO_flush(fp_out);
     MD5_Final(md5_res, p_md5_ctx);
+    printf("md5:");
+    for(i=0;i<16;i++)
+        printf("%02x ",md5_res[i]);
+    getchar();getchar();
 
-    signature = (unsigned char *)malloc(50);
+    signature = (unsigned char *)malloc(48);
     memset((char *)&ivec, 0, sizeof(ivec));
-    DES_ncbc_encrypt(buf, signature, 50, &key_schedule, &ivec, 0);
-    printf("signature:");
-    for(i=0;i<20;i++)
+    DES_ncbc_encrypt(buf, signature, 48, &key_schedule, &ivec, 0);
+    printf("\nsignature:");
+    for(i=0;i<48;i++)
         printf("%02x ",signature[i]);
     getchar();getchar();
     /* 验证签名 */
-    if (ECDSA_verify(0, md5_res, 16, signature, sig_len, ec_key) != 1)
+    if (ECDSA_verify(0, md5_res, 16, signature, 48, alice_pub_key) != 1)
     {
-        printf("ECDSA_verify err!\n");
+        printf("ECDSA_verify Failed!\n");
         getchar();
         return -1;
     }
 
-    printf("验证成功!\n");
+    printf("Success!\n");
     getchar();
     return 0;
 }

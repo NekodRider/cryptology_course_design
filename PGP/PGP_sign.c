@@ -51,7 +51,6 @@ int main()
     EC_KEY_set_group(ec_key,ec_group);
     EC_KEY_generate_key(ec_key);
     /* Alice 公钥 */
-    unsigned int size = ECDSA_size(ec_key);
     PEM_write_bio_EC_PUBKEY(fp_alice_pub,ec_key);
     BIO_flush(fp_alice_pub);
     printf("public key generated!\n");
@@ -77,7 +76,7 @@ int main()
 
     while ((length = BIO_read(fp_in,buf,128)) > 0)
     {
-        MD5_Update(p_md5_ctx, buf, length);
+        MD5_Update(p_md5_ctx, buf, 128);
         memset((char *)&ivec, 0, sizeof(ivec));
         DES_ncbc_encrypt(buf, ep_des, 128, &key_schedule, &ivec, DES_ENCRYPT);
         BIO_write(fp_out,ep_des,128);
@@ -87,32 +86,26 @@ int main()
         memset(ep_des, 0, sizeof(ep_des));
     }
     MD5_Final(md5_res, p_md5_ctx);
-    
-    signature= (unsigned char*)malloc(size);
+    printf("md5:");
+    for(i=0;i<16;i++)
+        printf("%02x ",md5_res[i]);
+    getchar();getchar();
+
+    signature= (unsigned char*)malloc(48);
     /* 签名数据，本例未做摘要，可将 digest 中的数据看作是 sha1 摘要结果 */
-    if(ECDSA_sign(0,md5_res,20,signature,&sig_len,ec_key)!=1)
+    if(ECDSA_sign(0,md5_res,16,signature,&sig_len,ec_key)!=1)
     {
         printf("sign err!\n");
         return -1;
     }
-    printf("signature:");
-    for(i=0;i<20;i++)
+    printf("\nsignature:");
+    for(i=0;i<48;i++)
         printf("%02x ",signature[i]);
     getchar();getchar();
     memset((char *)&ivec, 0, sizeof(ivec));
-    DES_ncbc_encrypt(signature, ep_des, size, &key_schedule, &ivec, DES_ENCRYPT);
-    BIO_write(fp_out,ep_des,size);
-
-    //EVP_PKEY* pkey = EVP_PKEY_new();
-    //EVP_PKEY_set1_EC_KEY(pkey,ec_key);
-    //EVP_PKEY_CTX *evp_ctx = EVP_PKEY_CTX_new(pkey,NULL);
-    //EVP_PKEY_CTX_set_ec_paramgen_curve_nid(evp_ctx,nid);
-    //EVP_PKEY_encrypt_init(evp_ctx);
-    //memset(buf,0,sizeof(buf));
-    //EVP_PKEY_encrypt(evp_ctx,buf,128,key_str,128);
-    //BIO_write(fp_out,buf,size);
-
-    
+    DES_ncbc_encrypt(signature, ep_des, 48, &key_schedule, &ivec, DES_ENCRYPT);
+    BIO_write(fp_out,ep_des,48);
+    BIO_flush(fp_out);
     
     printf("PGP completed!");
     getchar();
