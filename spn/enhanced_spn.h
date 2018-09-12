@@ -105,12 +105,19 @@ void keygen_enhanced(num128 *ptk, num128 k)
     *(ptk + 1) = k;
     for (i = 2; i < NR + 2; i++)
     {
+        unsigned char ch;
         tmp = k.part[0];
         for (j = 0; j < NUM128_SIZE - 1; j++)
         {
+            
+            ch = (k.part[j+1]&0xf)<<4;
+            k.part[j+1]=(k.part[j+1]>>4)|ch;
             k.part[j] = k.part[j + 1];
         }
+        ch = (tmp&0xf)<<4;
+        tmp=(tmp>>4)|ch;
         k.part[NUM128_SIZE - 1] = tmp;
+        k = sub_enhanced(k);
         *(ptk + i) = k;
     }
 }
