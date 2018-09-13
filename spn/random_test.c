@@ -1,7 +1,11 @@
 #include <stdio.h>
+#include <string.h>
+#include <time.h>
 #include "enhanced_spn.h"
 int main()
 {
+    clock_t t1,t2;
+    double duration;
     int i,j;
     num128 tmp_num128, tmp, tmp_last,
         k = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -12,6 +16,14 @@ int main()
     char path_in[10] = "plain.txt",
          path_out[10] = "out.txt";
     FILE *fp_in, *fp_out;
+    fp_in = fopen(path_in,"wb");
+    memset(buf,0,sizeof(buf));
+    for(i=0;i<1000000;i++){
+        fwrite(buf, sizeof(unsigned char), 16, fp_in);
+    }
+    fclose(fp_in);
+
+
     fp_in = fopen(path_in, "rb");
     fp_out = fopen(path_out, "wb");
     tmp_last = k;
@@ -31,17 +43,13 @@ int main()
             }
             
             tmp_num128.part[i]=r;
-            printf("%x ",r);
         }
-        printf("\n");
         keygen_enhanced(ptk, k);
         tmp = spn_enhanced(tmp_num128, ptk);
         for(i=0;i<16;i++){
             tmp_ch = tmp_last.part[i] = tmp.part[i];
-            printf("%x ",tmp_ch);
             fwrite(pch, sizeof(unsigned char), 1, fp_out);
         }
-        printf("\n");
     }
     fclose(fp_in);
     fclose(fp_out);

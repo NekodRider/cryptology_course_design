@@ -79,7 +79,6 @@ int main()
         DES_ncbc_encrypt(buf, dp_des, 128, &key_schedule, &ivec, 0);
         //BIO_write(fp_out, dp_des, 128);
         BIO_printf(fp_out,"%s",dp_des);
-        printf("%s",dp_des);
         MD5_Update(p_md5_ctx, dp_des, 128);
         // for (i = 0; i < 120; i++)
         //     printf("%02x", ep_des[i]);

@@ -28,8 +28,8 @@ void generate_rsa_parameters(mpz_t p, mpz_t q, mpz_t n, mpz_t a, mpz_t b)
     mpz_mul(phi_n, p, q);
     mpz_add_ui(p, p, 1);
     mpz_add_ui(q, q, 1);
-    mpz_init_set_ui(b, 65537); //公共指数b按标准为65537
-    multi_inverse(a, b, phi_n); //求e的逆元d
+    mpz_init_set_ui(b, 65537);
+    multi_inverse(a, b, phi_n);
     mpz_clear(phi_n);
 }
 
@@ -205,12 +205,15 @@ void mont_mul(mpz_t n,mpz_t a,mpz_t b,mpz_t N){
     while(1){
         if(mpz_cmp_ui(N_tmp,0)==0)
             break;
-        mpz_fdiv_r_2exp(r,a_tmp,1);
-        mpz_mul(tmp,r,b);
         mpz_fdiv_r_2exp(t,n,1);
-        mpz_add(t,tmp,t);
+        if(mpz_cmp_ui(N_tmp,0)!=0){
+            mpz_fdiv_r_2exp(r,a_tmp,1);
+            mpz_mul(tmp,r,b);
+            mpz_add(t,tmp,t);
+            mpz_add(n,n,tmp);
+            mpz_set_ui(tmp,0);
+        }
         mpz_fdiv_r_2exp(t,t,1);
-        mpz_add(n,n,tmp);
         if(mpz_cmp_ui(t,1)==0){
             mpz_add(n,n,N);
         }
