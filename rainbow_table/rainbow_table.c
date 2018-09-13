@@ -11,7 +11,7 @@ void reduction(unsigned char *y, unsigned char *x, unsigned int index)
     int i;
     for (i = 0; i < 6; i++)
     {
-        y[i] = PASSCHAR[(unsigned char)(x[i] ^ (index%12)) % 36];
+        y[i] = PASSCHAR[(x[i]+index)% 36];
     }
 }
 
@@ -45,12 +45,12 @@ void table_generate(FILE *fp, unsigned int END)
 
 int search(unsigned char *p, FILE *fp, unsigned char *q)
 {
-    unsigned char start_str[7], tmp_str[7], md5_str[17], buf[12];
+    unsigned char start_str[7], tmp_str[7], md5_str[17], buf[13];
     start_str[6]=tmp_str[6]=md5_str[16]='\0';
     unsigned int i, j, length;
     MD5_CTX md5_ctx;
     reduction(start_str, q, 0);
-    while ((length = fread(buf, 12, sizeof(unsigned), fp)) > 0)
+    while ((length = fread(buf, 12, sizeof(unsigned char), fp)) > 0)
     {
         int flag = 0;
         for (i = 0; i < 6; i++)
@@ -62,9 +62,12 @@ int search(unsigned char *p, FILE *fp, unsigned char *q)
             }
             tmp_str[i] = start_str[i];
         }
+        start_str[6]=tmp_str[6]=md5_str[16]=buf[12]='\0';
+        printf("%s %s %6s\n",start_str,tmp_str,buf+6);
         if (flag == 1)
             continue;
-        printf("%d %s",flag,tmp_str);
+        printf("%s %s\n",start_str,tmp_str);
+        getchar();getchar();
         for (i = 0; i < R_TIME - 1; i++)
         {
             MD5_Init(&md5_ctx);
@@ -103,7 +106,7 @@ int main()
     printf("Do you want to generate rainbow table(Y/Any):");
     if((ch=getchar())=='Y'){
         fp = fopen("table_200.txt", "wb");
-        table_generate(fp, 2000000);
+        table_generate(fp, 5000000);
     }
     // printf("Enter P:");
     // scanf("%s",input);
@@ -118,12 +121,11 @@ int main()
     fp = fopen("table.txt", "rb");
     int s=0;
     
-    for(i=0;i<100000;i++){
-        x = i;
-        for (j = 0; j < MAXSIZE; j++)
+    for(i=0;i<10000;i++){
+        for (i = 0; i < MAXSIZE; i++)
         {
-            input[j] = PASSCHAR[x%36];
-            x=x/36;
+            x = rand()%36;
+            input[i] = PASSCHAR[x];
         }
         MD5_CTX md5_ctx;
         MD5_Init(&md5_ctx);
@@ -134,7 +136,7 @@ int main()
             printf("\nFind the P:%s",res);
         }
     }
-    printf("success rate %.2f%%",(double)s/1000);
+    printf("success rate %.2f%%",(double)s/100);
     
     fclose(fp);
     return 0;
