@@ -6,18 +6,14 @@ int main()
 {
     int i;
     mpz_t p, q, n, a, b;
-    clock_t t1,t2;
+    clock_t t1, t2;
     double duration;
-    mpz_init(p);
-    mpz_init(q);
-    mpz_init(n);
-    mpz_init(a);
-    mpz_init(b);
-    t1=clock();
-    generate_rsa_parameters(p,q,n,a,b);
-     t2 = clock();
+    mpz_inits(p, q, n, a, b, NULL);
+    t1 = clock();
+    generate_rsa_parameters(p, q, n, a, b);
+    t2 = clock();
     duration = (double)(t2 - t1) / CLOCKS_PER_SEC;
-    printf("Use Time:%fs\n",duration);
+    printf("Use Time:%fs\n", duration);
     gmp_printf("%s (\n  %ZX,\n  %ZX\n)\n", "public key:\n", n, b);             //输出公钥(n, b)
     gmp_printf("%s (\n  %ZX,\n  %ZX,\n  %ZX\n)\n", "private key:\n", p, q, a); //输出私钥(p,q,a)
     return 0;

@@ -54,7 +54,8 @@ int main()
     PEM_write_bio_EC_PUBKEY(fp_bob_pub, ec_key);
     BIO_flush(fp_bob_pub);
     printf("public key generated!\n");
-    getchar();getchar();
+    getchar();
+    getchar();
     /* 获取对方公钥 */
     fp_alice_pub = BIO_new_file("alice_pub.pem", "rb");
     const EC_POINT *alice_pub_point;
@@ -65,9 +66,10 @@ int main()
     /* 获取共享密钥 */
     ECDH_compute_key(share_key, 20, alice_pub_point, ec_key, NULL);
     printf("shared key:");
-    for(i=0;i<20;i++)
-        printf("%02x ",share_key[i]);
-    getchar();getchar();
+    for (i = 0; i < 20; i++)
+        printf("%02x ", share_key[i]);
+    getchar();
+    getchar();
     DES_string_to_key(share_key, &key);
     DES_set_key_unchecked(&key, &key_schedule);
 
@@ -78,7 +80,7 @@ int main()
         memset((char *)&ivec, 0, sizeof(ivec));
         DES_ncbc_encrypt(buf, dp_des, 128, &key_schedule, &ivec, 0);
         //BIO_write(fp_out, dp_des, 128);
-        BIO_printf(fp_out,"%s",dp_des);
+        BIO_printf(fp_out, "%s", dp_des);
         MD5_Update(p_md5_ctx, dp_des, 128);
         // for (i = 0; i < 120; i++)
         //     printf("%02x", ep_des[i]);
@@ -88,17 +90,19 @@ int main()
     BIO_flush(fp_out);
     MD5_Final(md5_res, p_md5_ctx);
     printf("md5:");
-    for(i=0;i<16;i++)
-        printf("%02x ",md5_res[i]);
-    getchar();getchar();
+    for (i = 0; i < 16; i++)
+        printf("%02x ", md5_res[i]);
+    getchar();
+    getchar();
 
     signature = (unsigned char *)malloc(48);
     memset((char *)&ivec, 0, sizeof(ivec));
     DES_ncbc_encrypt(buf, signature, 48, &key_schedule, &ivec, 0);
     printf("\nsignature:");
-    for(i=0;i<48;i++)
-        printf("%02x ",signature[i]);
-    getchar();getchar();
+    for (i = 0; i < 48; i++)
+        printf("%02x ", signature[i]);
+    getchar();
+    getchar();
     /* 验证签名 */
     if (ECDSA_verify(0, md5_res, 16, signature, 48, alice_pub_key) != 1)
     {

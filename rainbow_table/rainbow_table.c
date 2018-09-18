@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
-#include<string.h>
+#include <string.h>
 #include <openssl/md5.h>
 #define R_TIME 1000
 #define LEN 6
@@ -41,7 +41,7 @@ void table_generate(FILE *fp, unsigned int END)
         for (i = 0; i < R_TIME; i++)
         {
             MD5_CTX md5_ctx;
-            MD5(tmp_str,6,md5_str);
+            MD5(tmp_str, 6, md5_str);
             reduction(tmp_str, md5_str, i);
         }
         fwrite(start_str, 6, sizeof(unsigned char), fp);
@@ -54,25 +54,26 @@ void table_generate(FILE *fp, unsigned int END)
 
 int search(unsigned char *p, FILE *fp, unsigned char *q)
 {
-    unsigned char start_str[7], tmp_str[7], md5_str[17], buf[13],hash_chain[R_TIME][17],r_chain[R_TIME][7];
+    unsigned char start_str[7], tmp_str[7], md5_str[17], buf[13], hash_chain[R_TIME][17], r_chain[R_TIME][7];
     start_str[6] = tmp_str[6] = md5_str[16] = '\0';
-    int i, j, k, m, length,chain_flag=0;
+    int i, j, k, m, length, chain_flag = 0;
     MD5_CTX md5_ctx;
     //time_t t1,t2;
     //double duration;
     //t1=clock();
-    for (k = R_TIME - 1; k >=0;k--)
+    for (k = R_TIME - 1; k >= 0; k--)
     {
-        if(k%100==0)
-            printf("Working On P(%d)\n",k);
-        for(i=0;i<16;i++)
-            md5_str[i]=q[i];
-        for(i=k;i<R_TIME-1;i++){
+        if (k % 100 == 0)
+            printf("Working On P(%d)\n", k);
+        for (i = 0; i < 16; i++)
+            md5_str[i] = q[i];
+        for (i = k; i < R_TIME - 1; i++)
+        {
             reduction(start_str, md5_str, i);
-            MD5(start_str,6,md5_str);
+            MD5(start_str, 6, md5_str);
         }
-        reduction(start_str, md5_str, R_TIME-1);
-        
+        reduction(start_str, md5_str, R_TIME - 1);
+
         rewind(fp);
         while ((length = fread(buf, 12, sizeof(unsigned char), fp)) > 0)
         {
@@ -87,20 +88,22 @@ int search(unsigned char *p, FILE *fp, unsigned char *q)
             }
             if (flag == 1)
                 continue;
-            for(i=0;i<6;i++)
+            for (i = 0; i < 6; i++)
                 tmp_str[i] = buf[i];
             for (i = 0; i < k; i++)
             {
-                MD5(tmp_str,6,md5_str);
+                MD5(tmp_str, 6, md5_str);
                 reduction(tmp_str, md5_str, i);
             }
-            MD5(tmp_str,6,md5_str);
-            for(i=0;i<16;i++){
-                if(md5_str[i]!=q[i])
+            MD5(tmp_str, 6, md5_str);
+            for (i = 0; i < 16; i++)
+            {
+                if (md5_str[i] != q[i])
                     break;
-                else if(i==15){
-                    for(j=0;j<6;j++)
-                        p[j]=tmp_str[j];
+                else if (i == 15)
+                {
+                    for (j = 0; j < 6; j++)
+                        p[j] = tmp_str[j];
                     //t2=clock();
                     //duration = (double)(t2 - t1) / CLOCKS_PER_SEC;
                     //printf("Using %ds.\n",duration);
@@ -118,9 +121,9 @@ int search(unsigned char *p, FILE *fp, unsigned char *q)
 int main()
 {
     int i, j, x;
-    unsigned char input[7], ch, res[7], tmp[17],test[7]="n1lvh2",md5_str[17];
+    unsigned char input[7], ch, res[7], tmp[17], test[7] = "n1lvh2", md5_str[17];
     srand(time(NULL));
-    input[6] = res[6] ='\0';
+    input[6] = res[6] = '\0';
     FILE *fp;
     printf("Do you want to generate rainbow table(Y/Any):");
     if ((ch = getchar()) == 'Y')
@@ -134,7 +137,6 @@ int main()
     //     reduction(test, md5_str, i);
     //     printf("%s\n",test);
     // }
-    
 
     fp = fopen("table.txt", "rb");
     int s = 0;
@@ -151,7 +153,7 @@ int main()
         // e_input[6]='\0';
         input[6] = '\0';
         printf("Now testing No.%d - %s\n", i + 1, input);
-        MD5(input,6,tmp);
+        MD5(input, 6, tmp);
         if (search(res, fp, tmp) == 1)
         {
             s++;
